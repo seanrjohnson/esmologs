@@ -1,7 +1,7 @@
 """
     Reads an hhsuite hhm file (containing one or more profiles) or a list of hhm files and runs hhblits of all of the profiles against a formatted hhsuite database.
 """
-from threedifam import __version__
+from esmologs import __version__
 from typing import List
 from collections.abc import Iterable
 import subprocess
