@@ -10,11 +10,12 @@ import sys
 import re
 from dataclasses import dataclass, fields
 from typing import Iterable
+from multiprocessing import Pool
 
 #####
 
 
-
+#TODO: is this parser the slowest part of the program? If so, we should try to speed it up.
 @dataclass
 class HHRResult:
     query_id: str
@@ -65,6 +66,8 @@ def parse_hhr(input_string:str)-> Iterable[HHRResult]:
     lines = input_string.split("\n")
     lines.reverse() # so we can use pop() to get the next line
     
+    out_list = []
+
     while lines:
         line = lines.pop()
         if line.startswith("Query"):
@@ -75,7 +78,7 @@ def parse_hhr(input_string:str)-> Iterable[HHRResult]:
             query_neff = float(line.split()[1])
         elif line.startswith('>'):
             if template_id is not None:
-                yield HHRResult(
+                out_list.append(HHRResult(
                     query_id=query_id,
                     query_length=query_length,
                     query_neff=query_neff,
@@ -96,6 +99,7 @@ def parse_hhr(input_string:str)-> Iterable[HHRResult]:
                     identity=identity,
                     similarity=similarity,
                     sum_probs=sum_probs
+                    )
                 )
                 # reset the template variables
                 template_id = None
@@ -168,7 +172,7 @@ def parse_hhr(input_string:str)-> Iterable[HHRResult]:
                         break
                     
     if template_id is not None:
-        yield HHRResult(
+        out_list.append(HHRResult(
             query_id=query_id,
             query_length=query_length,
             query_neff=query_neff,
@@ -189,9 +193,11 @@ def parse_hhr(input_string:str)-> Iterable[HHRResult]:
             identity=identity,
             similarity=similarity,
             sum_probs=sum_probs
+            )
         )
+    return out_list
 
-def run_search(hhm_strings: List[bytes], dbpath:str, cores:int = 1, program:str = "hhblits") -> Iterable[HHRResult]:
+def run_search(hhm_string:bytes, dbpath:str, cores:int = 1, program:str = "hhblits") -> Iterable[HHRResult]:
     if program == "hhblits":
         run_opts = ["hhblits","-i", "stdin", "-d", dbpath, "-tags", "-n", "1", "-v", "0", "-cpu", str(cores), "-o", "stdout"]
     elif program == "hhsearch":
@@ -200,16 +206,14 @@ def run_search(hhm_strings: List[bytes], dbpath:str, cores:int = 1, program:str 
         raise Exception("Unknown program: {}".format(program))
     
 
-    for hhm in hhm_strings:
-        hhblits_out = subprocess.Popen(run_opts, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = hhblits_out.communicate(input=hhm)
-        if hhblits_out.returncode != 0:
-            raise Exception("hhblits failed with return code {}\n{}".format(hhblits_out.returncode, err.decode("utf-8")))
-        out = out.decode("utf-8")
-        # print(out)
-        for rec in parse_hhr(out):
-            yield rec
-
+    #out_list = []
+    hhblits_out = subprocess.Popen(run_opts, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = hhblits_out.communicate(input=hhm_string)
+    if hhblits_out.returncode != 0:
+        raise Exception("hhblits failed with return code {}\n{}".format(hhblits_out.returncode, err.decode("utf-8")))
+    out = out.decode("utf-8")
+    # print(out)
+    return parse_hhr(out)
 
 def parse_hhms(files:List[str]):
     """
@@ -227,6 +231,14 @@ def parse_hhms(files:List[str]):
                 if line.startswith(b'//'):
                     yield b''.join(lines_buffer)
                     lines_buffer = list()
+
+class _search_worker():
+    def __init__(self, dbpath:str, cores:int = 1, program:str = "hhblits"):
+        self.dbpath = dbpath
+        self.cores = cores
+        self.program = program
+    def __call__(self, hhm:bytes):
+        return run_search(hhm, self.dbpath, self.cores, self.program)
 
 def main(argv):
     parser = argparse.ArgumentParser(f"\nversion: {__version__}\n\n" + __doc__,)
@@ -259,13 +271,18 @@ def main(argv):
     if params.out_fmt == "full":
         print("\t".join(HHRResult_fields), file=out)
 
-    for i, rec in enumerate(run_search(parse_hhms(params.input), params.database, params.cpu, params.program)):
-        if i >= params.k:
-            break
-        if params.out_fmt == "full":
-            print("\t".join((str(getattr(rec, field)) for field in HHRResult_fields)), file=out)
-        elif params.out_fmt == "triple":
-            print(f"{rec.query_id}\t{rec.template_id}\t{rec.score}", file=out)
+    pool = Pool(params.cpu)
+    #run_search(parse_hhms(params.input), params.database,params.program):
+    worker = _search_worker(params.database, 1, params.program)
+    for query_result in pool.imap_unordered(worker, parse_hhms(params.input)):
+        # print(query_result)
+        for i, rec in enumerate(query_result):
+            if i >= params.k:
+                break
+            if params.out_fmt == "full":
+                print("\t".join((str(getattr(rec, field)) for field in HHRResult_fields)), file=out)
+            elif params.out_fmt == "triple":
+                print(f"{rec.query_id}\t{rec.template_id}\t{rec.score}", file=out)
 
 
 if __name__ == '__main__':
