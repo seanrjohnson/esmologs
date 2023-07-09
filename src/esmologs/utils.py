@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #Importing required libraries
+import string
 import torch
 from torch.nn.utils.rnn import pad_sequence
 import torch.nn.functional as F
@@ -99,6 +100,40 @@ def seq2integer(seq_records):
     output = pad_sequence(integer_encoded_representations,batch_first=True,padding_value=26.0)
     return output
 
+class CleanSeq():
+    def __init__(self, clean=None):
+        self.clean = clean
+        if clean == 'delete':
+            # uses code from: https://github.com/facebookresearch/esm/blob/master/examples/contact_prediction.ipynb
+            deletekeys = dict.fromkeys(string.ascii_lowercase)
+            deletekeys["."] = None
+            deletekeys["*"] = None
+            translation = str.maketrans(deletekeys)
+            self.remove_insertions = lambda x: x.translate(translation)
+        elif clean == 'upper':
+            deletekeys = {'*': None, ".": "-"}
+            translation = str.maketrans(deletekeys)
+            self.remove_insertions = lambda x: x.upper().translate(translation)
+            
+
+        elif clean == 'unalign':
+            deletekeys = {'*': None, ".": None, "-": None}
+            
+            translation = str.maketrans(deletekeys)
+            self.remove_insertions = lambda x: x.upper().translate(translation)
+        
+        elif clean is None:
+            self.remove_insertions = lambda x: x
+        
+        else:
+            raise ValueError(f"unrecognized input for clean parameter: {clean}")
+        
+    def __call__(self, seq):
+        return self.remove_insertions(seq)
+
+    def __repr__(self):
+        return f"CleanSeq(clean={self.clean})"
+
 
 
 
@@ -123,6 +158,8 @@ def parse_fasta(filename, return_names=False, clean=None, full_name=False):
     out_seqs = list()
     out_names = list()
     (input_handle, input_type) = _open_if_is_name(filename)
+
+    seq_cleaner = CleanSeq(clean)
 
     for line in input_handle:
         line = line.strip()
@@ -149,36 +186,59 @@ def parse_fasta(filename, return_names=False, clean=None, full_name=False):
     if input_type == "name":
         input_handle.close()
     
-    if clean == 'delete':
-        # uses code from: https://github.com/facebookresearch/esm/blob/master/examples/contact_prediction.ipynb
-        deletekeys = dict.fromkeys(string.ascii_lowercase)
-        deletekeys["."] = None
-        deletekeys["*"] = None
-        translation = str.maketrans(deletekeys)
-        remove_insertions = lambda x: x.translate(translation)
-
+    if clean is not None:
         for i in range(len(out_seqs)):
-            out_seqs[i] = remove_insertions(out_seqs[i])
-    
-    elif clean == 'upper':
-        deletekeys = {'*': None, ".": "-"}
-        translation = str.maketrans(deletekeys)
-        remove_insertions = lambda x: x.translate(translation)
-
-        for i in range(len(out_seqs)):
-            out_seqs[i] = remove_insertions(out_seqs[i].upper())
-    elif clean == 'unalign':
-        deletekeys = {'*': None, ".": None, "-": None}
-        
-        translation = str.maketrans(deletekeys)
-        remove_insertions = lambda x: x.translate(translation)
-        
-        for i in range(len(out_seqs)):
-            out_seqs[i] = remove_insertions(out_seqs[i].upper())
-    elif clean is not None:
-        raise ValueError(f"unrecognized input for clean parameter: {clean}")
+            out_seqs[i] = seq_cleaner(out_seqs[i])
 
     if return_names:
         return out_names, out_seqs
     else:
         return out_seqs
+    
+
+def iter_fasta(filename, clean=None, full_name=False): 
+    """
+        adapted from: https://bitbucket.org/seanrjohnson/srj_chembiolib/src/master/parsers.py
+        
+        input:
+            filename: the name of a fasta file or a filehandle to a fasta file.
+            return_names: if True then return two lists: (names, sequences), otherwise just return list of sequences
+            clean: {None, 'upper', 'delete', 'unalign'}
+                    if 'delete' then delete all lowercase "." and "*" characters. This is usually if the input is an a2m file and you don't want to preserve the original length.
+                    if 'upper' then delete "*" characters, convert lowercase to upper case, and "." to "-"
+                    if 'unalign' then convert to upper, delete ".", "*", "-"
+            full_name: if True, then returns the entire name. By default only the part before the first whitespace is returned.
+        output: names, sequences
+    """
+    
+    prev_len = 0
+    prev_name = None
+    prev_seq = ""
+    (input_handle, input_type) = _open_if_is_name(filename)
+
+    seq_cleaner = CleanSeq(clean)
+
+    for line in input_handle:
+        line = line.strip()
+        if len(line) == 0:
+            continue
+        if line[0] == ">":
+            if full_name:
+                name = line[1:]
+            else:
+                parts = line.split(None, 1)
+                name = parts[0][1:]
+            if (prev_name is not None):
+                yield prev_name, seq_cleaner(prev_seq)
+            prev_len = 0
+            prev_name = name
+            prev_seq = ""
+        else:
+            prev_len += len(line)
+            prev_seq += line
+    if (prev_name != None):
+        yield prev_name, seq_cleaner(prev_seq)
+        
+
+    if input_type == "name":
+        input_handle.close()

@@ -1,5 +1,5 @@
 def compare_files(f1,f2, skip_lines=0):
-    with open(f1,"r") as newfile, open(f2, "r") as oldfile:
+    with open(f1,"rb") as newfile, open(f2, "rb") as oldfile:
         for x in range(skip_lines):
             newfile.readline()
             oldfile.readline()
