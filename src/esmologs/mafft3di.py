@@ -18,7 +18,7 @@ import importlib.resources as importlib_resources
 
 
 def main(argv):
-    pkg = importlib_resources.files("threedifam")
+    pkg = importlib_resources.files("esmologs")
     matrix_file = str(pkg / "data" / "mat3di.out")
     if ("-h" in argv) or ("--help" in argv) or (len(argv) == 0):
         print(__doc__, file=sys.stderr)
