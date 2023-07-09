@@ -13,6 +13,7 @@ from multiprocessing.pool import ThreadPool
 from tqdm import tqdm
 import warnings
 import logging
+import importlib.resources as importlib_resources
 
 swap_io = {"phmmer": (False, False), "hmmscan": (True, False)}
 
@@ -85,6 +86,7 @@ def main(argv):
     # parser.add_argument('-k',  default=1, required=False, type=int, help="number of top hits to keep for each sequence. Default is 1.")
     parser.add_argument("--args", default=None, required=False, help="Extra arguments to pass to the command. Must be a string of space separated arguments. Put two sets of quotes around it.")
     parser.add_argument('--command', default="hmmsearch", required=False, help="Command to use. Default is hmmsearch.")
+    parser.add_argument('--tdi', action='store_true', default=False, required=False, help="If set, use 3Di_[command], and for phmmer, use --mxfile [3Di substitution matrix file]")
     parser.add_argument('--log_file', default=None, required=False, help="Log file to write to. Default is stdout.")
     params = parser.parse_args(argv)
     
@@ -104,7 +106,17 @@ def main(argv):
     
     swap_input, swap_output = swap_io[params.command]
 
+    pkg = importlib_resources.files("esmologs")
+    tdi_matrix_file = str(pkg / "data" / "mat3di.out")
+
+    if params.tdi:
+        params.command = "3Di_" + params.command
+        if params.command == "3Di_phmmer":
+            extra_args += ["--mxfile", tdi_matrix_file]
+
     command_line_args = [params.command, "--cpu", "1", "--noali", "--notextw", "-o", "/dev/null"] + extra_args
+    
+    print(" ".join(command_line_args), file=sys.stderr)
     pool = ThreadPool(params.threads)
     with open(params.output, "w") as out:
         for result in tqdm(pool.imap_unordered(lambda x: worker(x[0], x[1], params.database, command_line_args, swap_input=swap_input), input_iter)):
