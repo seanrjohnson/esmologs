@@ -15,7 +15,21 @@ import warnings
 import logging
 import importlib.resources as importlib_resources
 
-swap_io = {"phmmer": (False, False), "hmmscan": (True, False)}
+def iter_hmm(hmm_file):
+    out_list = []
+    name = ""
+    for line in hmm_file:
+        out_list.append(line.strip())
+        if line.startswith("NAME  "):
+            name = line.split()[1]
+        if line[0:2] == "//":
+            yield name, "\n".join(out_list)
+            out_list = []
+
+
+
+# {command: (swap_input, swap_output)}
+swap_io = {"phmmer": (False, False), "hmmscan": (True, False), "hmmsearch": (False, False)}
 
 def get_top_hit(domtblout_name):
     """
@@ -46,10 +60,17 @@ def worker(name, sequence, database, command_line_args, max_on_fail=True, swap_i
 
     logger = logging.getLogger(__name__)
 
+    tmp_file_extension = ".fasta"
+    if command_line_args[0] == "hmmsearch":
+        tmp_file_extension = ".hmm"
     with tempfile.TemporaryDirectory() as tmpdirname:
-        tmpfile_name = os.path.join(tmpdirname, "tmp.fasta")
+        tmpfile_name = os.path.join(tmpdirname, "tmp" + tmp_file_extension)
         with open(tmpfile_name, "w") as tmp:
-            print(f">{name}\n{sequence}", file=tmp)
+            if command_line_args[0] == "hmmsearch":
+                #print(sequence)
+                print(sequence, file=tmp)
+            else:
+                print(f">{name}\n{sequence}", file=tmp)
         domtblout_name = os.path.join(tmpdirname, "tmp.tblout")
         
         query_db = [tmp.name, database]
@@ -98,7 +119,10 @@ def main(argv):
         logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
     input_handle = open(params.input, "r")
-    input_iter = FastaIO.SimpleFastaParser(input_handle)
+    if params.command == "hmmsearch":
+        input_iter = iter_hmm(input_handle)
+    else:
+        input_iter = FastaIO.SimpleFastaParser(input_handle)
     
     extra_args = []
     if params.args is not None:
@@ -116,7 +140,6 @@ def main(argv):
 
     command_line_args = [params.command, "--cpu", "1", "--noali", "--notextw", "-o", "/dev/null"] + extra_args
     
-    print(" ".join(command_line_args), file=sys.stderr)
     pool = ThreadPool(params.threads)
     with open(params.output, "w") as out:
         for result in tqdm(pool.imap_unordered(lambda x: worker(x[0], x[1], params.database, command_line_args, swap_input=swap_input), input_iter)):
@@ -129,7 +152,5 @@ def main(argv):
     pool.close()
     pool.join()
     
-
-
 if __name__ == "__main__":
     main(sys.argv[1:])
