@@ -54,6 +54,8 @@ setuptools.setup(
         #"src/esmologs/pred_pfamN.py",
         "src/esmologs/hhsearch_multiple.py",
         "src/esmologs/hmmer_top_hit.py",
+        "src/esmologs/predict_from_ESM2_to_3Di.py",
+        "src/esmologs/train_ESM2_to_3Di.py",
     ],
     install_requires=[
         "setuptools>=60.7",
