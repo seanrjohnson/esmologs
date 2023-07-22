@@ -1,4 +1,4 @@
-from ESM2_to_3Di import ESM2_to_3Di
+from esmologs.ESM2_to_3Di import ESM2_to_3Di
 import argparse
 import torch
 from Bio.SeqIO import FastaIO
