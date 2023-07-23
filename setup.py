@@ -51,11 +51,12 @@ setuptools.setup(
         "src/esmologs/count_aa_freqs.py",
         "src/esmologs/single_seq_to_hmm.py",
         "src/esmologs/split_fasta.py",
-        #"src/esmologs/pred_pfamN.py",
         "src/esmologs/hhsearch_multiple.py",
         "src/esmologs/hmmer_top_hit.py",
         "src/esmologs/predict_from_ESM2_to_3Di.py",
         "src/esmologs/train_ESM2_to_3Di.py",
+        "src/esmologs/filter_fasta.py",
+        "src/esmologs/fasta_train_test_dev_split.py",
     ],
     install_requires=[
         "setuptools>=60.7",

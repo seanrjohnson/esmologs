@@ -3,8 +3,8 @@
     Uses ESM2 to infer MSA column-wise probabilities.
     Writes a profile hmm in HHsearch 1.5 (.hhm) hmmer3 (.hmm) format.
 """
-#TODO: ESM2-hmmer vs phmmer (are ESM2 probabilities better than dirichlet probabilities)?
 #TODO: figure out how to calculate cs219 files directly
+#TODO: Apply Dirichlet priors to probabilities for hmmer3 output.
 
 import torch
 import argparse
@@ -197,9 +197,9 @@ def hmmer_transform(prob):
     elif prob > 0 and prob < 1:
         return -1 * np.log(prob)
 
-def hmmer_num_format(num):
+def hmmer_num_format(num) -> str:
     if num == "*":
-        return num
+        return str(num)
     return str(round(float(num), 5)).ljust(7, '0')
 
 def write_hmmer(out_handle, seq, probabilities, name, com="", filt="", date="", description=" ", alphabet=None):
@@ -215,7 +215,8 @@ def write_hmmer(out_handle, seq, probabilities, name, com="", filt="", date="", 
         description: string to put for the description (DESC) field.
         alphabet: a ProfileAlphabet object.
     """
-
+    if alphabet is None:
+        raise ValueError("alphabet must be specified")
     # date example: Sun Oct 23 12:38:48 2022
     # TODO: which parameters are actually necessary? Date?
     # TODO: add predicted secondary structure
@@ -279,6 +280,9 @@ def write_hhsearch(out_handle, seq, probabilities, name, com="", date="", descri
         description: not used
         alphabet: a ProfileAlphabet object.
     """
+
+    if alphabet is None:
+        raise ValueError("alphabet must be specified")
 
     # date example: Sun Oct 23 12:37:01 2022
     # TODO: which parameters are actually necessary? Date?
@@ -363,6 +367,9 @@ def main(argv):
     if params.profile_outdir is not None:
         profile_outdir = Path(params.profile_outdir)
         profile_outdir.mkdir(exist_ok=True)
+
+    if params.profile_outdir is None and params.output is None:
+        raise ValueError("Either --output or --output_dir must be specified.")
         
     names, seqs = utils.parse_fasta(params.input, clean='upper', return_names=True)
     
