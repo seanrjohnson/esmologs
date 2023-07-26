@@ -80,7 +80,7 @@ or
 
 For multiple queries
 
-```
+```bash
 #concatenate multiple .hhm files into an .hhm file containing multiple profiles.
 cat generated_hhm/*.hhm > queries.hhm
 # use the hhsearch_multiple.py script from esmologs
@@ -90,19 +90,35 @@ hhsearch_multiple.py -i queries.hhm -d db --cpu 8 --program hhblits --out_fmt tr
 
 ## Predict 3Di sequences from protein sequences
 
-`wget` TODO
+
+```bash
+# download the ESM-2 3B 3Di weights
+wget https://zenodo.org/record/8174960/files/ESM-2_3B_3Di.pt
+
+# predict 3Di sequences from peptide sequences in peptides.fasta
+predict_from_ESM2_to_3Di.py --weights ESM-2_3B_3Di.pt -i peptides.fasta -o threedi.fasta
+```
 
 
 ## Create a Foldseek database from predicted 3Di sequences
 
+`fasta2foldseek.py --aa peptides.fasta --tdi threedi.fasta -o foldseek_db`
 
-`fasta2foldseek.py`  TODO
+
+## Run foldseek searches
+
+```bash 
+# this is for an all-to-all comparison of foldseek_db, you could also use different databases for query and target
+foldseek search foldseek_db foldseek_db aln tmpFolder
+foldseek convertalis foldseek_db foldseek_db aln all_to_all.tsv --format-output query,target,bits
+```
+
 
 ## Train ESM-2 3B 3Di starting from the ESM-2 3B pre-trained weights
 
 
 Download the training data and make the splits
-```
+```bash
 #Download UniProt50 foldseek database
 foldseek databases Alphafold/UniProt50 afdb50  tmp
 
@@ -118,13 +134,13 @@ fasta_train_test_dev_split.py --pep afdb50.pep.120_1000aa.fasta --3di afdb50.3di
 ```
 
 Train the CNN
-```
+```bash
 train_ESM2_3B_to_3Di.py --train afdb50.120_1000aa.train --val afdb50.120_1000aa.val --device cuda:1 --epochs 1 --validation_interval 50 --validation_batches 10 --batch_size 15 --checkpoint_dir 3di_afdb_cnn --log 3di_afdb_cnn.log
 ```
 
 It converges to a loss of about 1.37 after about 2 hours (well before the end of the first epoch). Kill it and start again with the last ESM-2 layer unfrozen.
 
-```
+```bash
 train_ESM2_3B_to_3Di.py --train afdb50.120_1000aa.train --val afdb50.120_1000aa.val --device cuda:1 --epochs 1 --validation_interval 100 --validation_batches 10 --batch_size 10 --checkpoint_dir 3di_afdb_cnn_unfreeze --log 3di_afdb_cnn_unfreeze.log --starting_weights 3di_afdb_cnn/0_000000000014.pt --esm_layers_to_train 36
 ```
 
