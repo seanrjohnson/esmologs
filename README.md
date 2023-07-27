@@ -22,6 +22,10 @@ For HMMER3Di, see the separate repository:
 
 Note that HMMER3Di will work attrociously on amino acids, and, apparently, not much differently from standard HMMER3 on 3Di sequences.
 
+# Data analysis
+Code for generating the plots and tables in the manuscript can be found here:
+[https://github.com/seanrjohnson/esmologs/blob/main/notebooks/Data_analysis.ipynb](https://github.com/seanrjohnson/esmologs/blob/main/notebooks/Data_analysis.ipynb)
+
 # Examples
 
 Note that we developed and tested these scripts on an Nvidia A100 with 40 Gb of VRAM. Some scripts may use a lot of VRAM, particularly for long protein sequences.
