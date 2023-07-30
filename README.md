@@ -1,5 +1,6 @@
 # esmologs
 Local homology search powered by the ESM-2 protein language model, Foldseek, HMMER, and hhsuite.
+See also the preprint associated with this code: [https://www.biorxiv.org/content/10.1101/2023.07.26.550718v1](https://www.biorxiv.org/content/10.1101/2023.07.26.550718v1)
 
 
 
