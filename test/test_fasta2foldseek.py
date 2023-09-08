@@ -4,7 +4,7 @@ import helpers
 
 def test_fasta2foldseek_1(shared_datadir):
     with tempfile.TemporaryDirectory() as output_dir:
-        output_dir = "tmp"
+        #output_dir = "tmp"
         fasta2foldseek.main(["--aa", str(shared_datadir / "af2_examples.pep.fasta"), "--tdi", str(shared_datadir / "af2_examples.3di.fasta"), "-o", output_dir + "/out_foldseek"])
         #pep
         helpers.compare_files(shared_datadir / "af2_examples", output_dir + "/out_foldseek")
