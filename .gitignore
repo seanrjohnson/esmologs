@@ -160,3 +160,6 @@ cython_debug/
 #.idea/
 
 tmp/*
+notebooks/SCOPe40_raw/*
+notebooks/SCOPe40_processed/*
+notebooks/search_results/*
