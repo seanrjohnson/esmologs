@@ -21,7 +21,7 @@ dependencies:
   - pytorch-cuda~=11.7
   - pytorch~=2.0.1
   - tqdm
-  - biopython~=1.79
+  - biopython>=1.79
   - seaborn
   - hhsuite
   - scipy~=1.11.2
