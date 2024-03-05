@@ -140,13 +140,13 @@ fasta_train_test_dev_split.py --pep afdb50.pep.120_1000aa.fasta --3di afdb50.3di
 
 Train the CNN
 ```bash
-train_ESM2_3B_to_3Di.py --train afdb50.120_1000aa.train --val afdb50.120_1000aa.val --device cuda:1 --epochs 1 --validation_interval 50 --validation_batches 10 --batch_size 15 --checkpoint_dir 3di_afdb_cnn --log 3di_afdb_cnn.log
+train_ESM2_to_3Di.py --train afdb50.120_1000aa.train --val afdb50.120_1000aa.val --device cuda:1 --epochs 1 --validation_interval 50 --validation_batches 10 --batch_size 15 --checkpoint_dir 3di_afdb_cnn --log 3di_afdb_cnn.log
 ```
 
 It converges to a loss of about 1.37 after about 2 hours (well before the end of the first epoch). Kill it and start again with the last ESM-2 layer unfrozen.
 
 ```bash
-train_ESM2_3B_to_3Di.py --train afdb50.120_1000aa.train --val afdb50.120_1000aa.val --device cuda:1 --epochs 1 --validation_interval 100 --validation_batches 10 --batch_size 10 --checkpoint_dir 3di_afdb_cnn_unfreeze --log 3di_afdb_cnn_unfreeze.log --starting_weights 3di_afdb_cnn/0_000000000014.pt --esm_layers_to_train 36
+train_ESM2_to_3Di.py --train afdb50.120_1000aa.train --val afdb50.120_1000aa.val --device cuda:1 --epochs 1 --validation_interval 100 --validation_batches 10 --batch_size 10 --checkpoint_dir 3di_afdb_cnn_unfreeze --log 3di_afdb_cnn_unfreeze.log --starting_weights 3di_afdb_cnn/0_000000000014.pt --esm_layers_to_train 36
 ```
 
 It converges after about 11 hours at loss of 1.09.

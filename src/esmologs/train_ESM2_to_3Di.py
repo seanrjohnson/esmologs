@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
-from ESM2_to_3Di import ESM2_to_3Di, SeqsDataset
+from esmologs.ESM2_to_3Di import ESM2_to_3Di, SeqsDataset
 import argparse
 import sys
 import re
