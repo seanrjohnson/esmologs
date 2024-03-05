@@ -53,7 +53,7 @@ class ESM2_to_3Di(nn.Module):
         # 21 channels is number of 3Di symbols plus a pad token.
         self.target_alphabet = 'ACDEFGHIKLMNPQRSTVWY-' #TODO: is padding needed?
 
-        self.cnn_layers = nn.Sequential(
+        self.cnn_layers = nn.Sequential( #TODO: does this need to be adjusted for different ESM models?
             nn.Conv1d(in_channels=self.esm_embedding_size, out_channels=300, kernel_size=5, stride=1, padding=3),
             nn.ReLU(inplace=True),
             nn.Conv1d(in_channels=300, out_channels=len(self.target_alphabet), kernel_size=5, stride=1, padding=1)

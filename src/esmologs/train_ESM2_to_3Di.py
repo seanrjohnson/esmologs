@@ -164,7 +164,7 @@ def main(argv):
     parser.add_argument("--device", type=str, default="cpu", required=False,
                         help="What device to use.")
     
-    parser.add_argument("--esm_model", type=str, default="esm2_t36_3B_UR50D", required=True,
+    parser.add_argument("--esm_model", type=str, default="esm2_t36_3B_UR50D", required=False,
                         choices={"esm2_t48_15B_UR50D","esm2_t36_3B_UR50D","esm2_t33_650M_UR50D",
                                  "esm2_t30_150M_UR50D","esm2_t12_35M_UR50D","esm2_t6_8M_UR50D"})
     
