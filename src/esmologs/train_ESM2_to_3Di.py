@@ -169,7 +169,7 @@ def main(argv):
                                  "esm2_t30_150M_UR50D","esm2_t12_35M_UR50D","esm2_t6_8M_UR50D"})
     
     parser.add_argument("--starting_weights", type=str, default=None, required=False,
-                        help="If set, then initialize the model weights to these values, otherwise use default pytorch initialization.")
+                        help="If set, then initialize the model weights to these values, otherwise use ESM2 pretrained weights and the default pytorch initialization for the top layers.")
     parser.add_argument("--epochs", type=int, default=1, required=False,
                         help="Run training for this many passes over the training data.")
     parser.add_argument("--validation_interval", type=int, default=5000, required=False,
@@ -204,9 +204,12 @@ def main(argv):
         raise ValueError("Device must be cpu, cuda, or cuda:[integer]")
     
     # defining the model
-    model = ESM2_to_3Di(params.esm_model)
+
     if params.starting_weights is not None:
-        model.load_state_dict(torch.load(params.starting_weights, map_location=device), strict=False)
+        model = ESM2_to_3Di(params.esm_model, weights=torch.load(params.starting_weights, map_location=device))
+    else:
+        model = ESM2_to_3Di(params.esm_model)
+
     model.to(device)
     
     

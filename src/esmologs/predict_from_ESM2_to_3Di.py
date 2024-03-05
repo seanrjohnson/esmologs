@@ -54,8 +54,8 @@ def main(argv):
         raise ValueError("Device must be cpu, cuda, or cuda:[integer]")
     
     # defining the model
-    model = ESM2_to_3Di(params.esm_model)
-    model.load_state_dict(torch.load(params.weights, map_location=device), strict=False)
+    model = ESM2_to_3Di(params.esm_model, torch.load(params.weights, map_location=device))
+    #model.load_state_dict(torch.load(params.weights, map_location=device), strict=False)
     model.to(device)
     model.eval()
     

@@ -9,14 +9,38 @@ from torch.utils.data import Dataset
 import numpy as np
 from torch.nn.utils.rnn import pad_sequence
 from esm import pretrained
+import esm
 from typing import Union, Optional
 from Bio import SeqIO
+from esm.model.esm2 import ESM2
 
 
 class ESM2_to_3Di(nn.Module):
-    def __init__(self, esm_model="esm2_t36_3B_UR50D"):
+    models_cfg = {"esm2_t48_15B_UR50D": {"num_layers": 48, "embed_dim": 5120, "attention_heads": 40, "token_dropout": True},
+                  "esm2_t36_3B_UR50D": {"num_layers": 36, "embed_dim": 2560, "attention_heads": 40, "token_dropout": True},
+                  "esm2_t33_650M_UR50D": {"num_layers": 33, "embed_dim": 1280, "attention_heads": 20, "token_dropout": True},
+                  "esm2_t30_150M_UR50D": {"num_layers": 30, "embed_dim": 640, "attention_heads": 20, "token_dropout": True},
+                  "esm2_t12_35M_UR50D": {"num_layers": 12, "embed_dim": 480, "attention_heads": 20, "token_dropout": True},
+                  "esm2_t6_8M_UR50D": {"num_layers": 6, "embed_dim": 320, "attention_heads": 20, "token_dropout": True}
+                }
+
+    def __init__(self, esm_model="esm2_t36_3B_UR50D", weights=None):
+        """
+        Args:
+            esm_model (str, optional): The ESM model to use. Defaults to "esm2_t36_3B_UR50D".
+            weights (dict, optional): The weights to initialize the model with. Defaults to None.
+                                        If None, then pretrained ESM2 weights are downloaded and used, and the top CNN layer is left with default weights.
+        """
         super(ESM2_to_3Di, self).__init__()
-        self.esm_model, self.esm_alphabet = pretrained.load_model_and_alphabet(esm_model)
+        # load the model
+        if weights is None:
+            self.esm_model, self.esm_alphabet = pretrained.load_model_and_alphabet(esm_model)
+        else:
+            self.esm_alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+            self.esm_model = ESM2(alphabet=self.esm_alphabet,
+                                  **self.models_cfg[esm_model]
+                                 )        
+        
         self.esm_embedding_size = self.esm_model.embed_tokens.weight.shape[1]
         self.esm_repr_layer = self.esm_model.num_layers
         # batch converter takes a list of tuples: [(name, seq), ...]
@@ -34,6 +58,9 @@ class ESM2_to_3Di(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv1d(in_channels=300, out_channels=len(self.target_alphabet), kernel_size=5, stride=1, padding=1)
         )
+
+        if weights is not None:
+            self.load_state_dict(weights, strict=False)
         
 
     def freeze_esm(self):
