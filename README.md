@@ -1,6 +1,9 @@
 # esmologs
 Local homology search powered by the ESM-2 protein language model, Foldseek, HMMER, and hhsuite.
-See also the preprint associated with this code: [https://www.biorxiv.org/content/10.1101/2023.07.26.550718v1](https://www.biorxiv.org/content/10.1101/2023.07.26.550718v1)
+
+See also the paper associated with this code:
+
+Johnson, Sean R., et al. “Sensitive Remote Homology Search by Local Alignment of Small Positional Embeddings from Protein Language Models.” eLife, vol. 12, Feb. 2024. elifesciences.org, https://doi.org/10.7554/eLife.91415.2.
 
 
 
