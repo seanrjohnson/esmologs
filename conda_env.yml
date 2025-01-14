@@ -1,11 +1,9 @@
 name: esmologs
 channels:
+  - conda-forge
   - pytorch
   - nvidia
   - bioconda
-  - conda-forge
-  - defaults
-
 dependencies:
   - python~=3.10
   - pip
